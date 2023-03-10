@@ -1,0 +1,156 @@
+using System;
+using System.IO;
+using System.Security.Cryptography;
+using System.Text;
+
+namespace Cryptography
+{
+    class Program
+    {
+        static void Main(string[] args)
+        {
+            bool done = false;
+            while (!done)
+            {
+                Console.WriteLine("Select option:");
+                Console.WriteLine("1. Encrypt Text");
+                Console.WriteLine("2. Decrypt Text");
+                Console.WriteLine("3. Encrypt and Save to File");
+                Console.WriteLine("4. Read Encrypted Text from File and Decrypt");
+                Console.WriteLine("5. Exit");
+                Console.Write("Enter your choice (1-5): ");
+                int choice = int.Parse(Console.ReadLine());
+                switch (choice)
+                {
+                    case 1:
+                        Console.Write("Enter the text to encrypt: ");
+                        string plainText = Console.ReadLine();
+                        Console.Write("Enter the 16-byte encryption key: ");
+                        string keyString = Console.ReadLine();
+                        byte[] key = Encoding.UTF8.GetBytes(keyString);
+                        Console.Write("Enter the 16-byte initialization vector: ");
+                        string ivString = Console.ReadLine();
+                        byte[] iv = Encoding.UTF8.GetBytes(ivString);
+                        string encryptedText = Encrypt(plainText, key, iv);
+                        Console.WriteLine("Encrypted Text: " + encryptedText);
+                        break;
+                    case 2:
+                        Console.Write("Enter the text to decrypt: ");
+                        string encryptedString = Console.ReadLine();
+                        Console.Write("Enter the 16-byte encryption key: ");
+                        string keyString2 = Console.ReadLine();
+                        byte[] key2 = Encoding.UTF8.GetBytes(keyString2);
+                        Console.Write("Enter the 16-byte initialization vector: ");
+                        string ivString2 = Console.ReadLine();
+                        byte[] iv2 = Encoding.UTF8.GetBytes(ivString2);
+                        string decryptedText = Decrypt(encryptedString, key2, iv2);
+                        Console.WriteLine("Decrypted Text: " + decryptedText);
+                        break;
+                    case 3:
+                        Console.Write("Enter the text to encrypt and save to file: ");
+                        string plainText2 = Console.ReadLine();
+                        Console.Write("Enter the 16-byte encryption key: ");
+                        string keyString3 = Console.ReadLine();
+                        byte[] key3 = Encoding.UTF8.GetBytes(keyString3);
+                        Console.Write("Enter the 16-byte initialization vector: ");
+                        string ivString3 = Console.ReadLine();
+                        byte[] iv3 = Encoding.UTF8.GetBytes(ivString3);
+                        Console.Write("Enter the filename to save encrypted text: ");
+                        string fileName = Console.ReadLine();
+                        string encryptedText2 = Encrypt(plainText2, key3, iv3);
+                        SaveToFile(fileName, encryptedText2);
+                        Console.WriteLine("Text has been encrypted and saved to file.");
+                        break;
+                    case 4:
+                        Console.Write("Enter the filename to read encrypted text: ");
+                        string fileName2 = Console.ReadLine();
+                        Console.Write("Enter the 16-byte encryption key: ");
+                        string keyString4 = Console.ReadLine();
+                        byte[] key4 = Encoding.UTF8.GetBytes(keyString4);
+                        Console.Write("Enter the 16-byte initialization vector: ");
+                        string ivString4 = Console.ReadLine();
+                        byte[] iv4 = Encoding.UTF8.GetBytes(ivString4);
+                        string encryptedText3 = ReadFromFile(fileName2);
+                        string decryptedText2 = Decrypt(encryptedText3, key4, iv4);
+                        Console.WriteLine("Decrypted Text: " + decryptedText2);
+                        break;
+                    case 5:
+                        Console.WriteLine("Exiting program...");
+                        done = true;
+                        break;
+                    default:
+                        Console.WriteLine("Invalid choice Please try again.");
+                        break;
+                }
+                Console.WriteLine();
+                Console.WriteLine("Press any key to continue...");
+                Console.ReadKey();
+                Console.Clear(); // Clear the console screen
+                Main(args); // Call the Main function again to display the choices
+            }
+            static string Encrypt(string plainText, byte[] key, byte[] iv)
+            {
+                string encryptedText;
+                using (Aes aesAlg = Aes.Create())
+                {
+                    aesAlg.Key = key;
+                    aesAlg.IV = iv;
+                    ICryptoTransform encryptor = aesAlg.CreateEncryptor(aesAlg.Key, aesAlg.IV);
+                    using (MemoryStream msEncrypt = new MemoryStream())
+                    {
+                        using (CryptoStream csEncrypt = new CryptoStream(msEncrypt, encryptor, CryptoStreamMode.Write))
+                        {
+                            using (StreamWriter swEncrypt = new StreamWriter(csEncrypt))
+                            {
+                                swEncrypt.Write(plainText);
+                            }
+                            encryptedText = Convert.ToBase64String(msEncrypt.ToArray());
+                        }
+                    }
+                }
+                return encryptedText;
+            }
+
+            static string Decrypt(string encryptedText, byte[] key, byte[] iv)
+            {
+                string plainText;
+                byte[] cipherText = Convert.FromBase64String(encryptedText);
+                using (Aes aesAlg = Aes.Create())
+                {
+                    aesAlg.Key = key;
+                    aesAlg.IV = iv;
+                    ICryptoTransform decryptor = aesAlg.CreateDecryptor(aesAlg.Key, aesAlg.IV);
+                    using (MemoryStream msDecrypt = new MemoryStream(cipherText))
+                    {
+                        using (CryptoStream csDecrypt = new CryptoStream(msDecrypt, decryptor, CryptoStreamMode.Read))
+                        {
+                            using (StreamReader srDecrypt = new StreamReader(csDecrypt))
+                            {
+                                plainText = srDecrypt.ReadToEnd();
+                            }
+                        }
+                    }
+                }
+                return plainText;
+            }
+
+            static void SaveToFile(string fileName, string encryptedText)
+            {
+                using (StreamWriter sw = new StreamWriter(fileName))
+                {
+                    sw.Write(encryptedText);
+                }
+            }
+
+            static string ReadFromFile(string fileName)
+            {
+                string encryptedText;
+                using (StreamReader sr = new StreamReader(fileName))
+                {
+                    encryptedText = sr.ReadToEnd();
+                }
+                return encryptedText;
+            }
+        }
+    }
+}
